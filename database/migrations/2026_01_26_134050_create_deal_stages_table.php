@@ -11,15 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('calendar_event_attendees', function (Blueprint $table) {
+        Schema::create('deal_stages', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('calendar_event_id');
-            $table->morphs('attendee');
+            $table->unsignedBigInteger('tenant_id');
+            $table->string('name');
+            $table->integer('order')->default(0);
+            $table->string('color')->default('#3b82f6'); // hex color
             $table->timestamps();
 
-            $table->index('calendar_event_id');
-
-            $table->foreign('calendar_event_id')->references('id')->on('calendar_events')->onDelete('cascade');
+            $table->index('tenant_id');
+            $table->index('order');
         });
     }
 
@@ -28,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('calendar_event_attendees');
+        Schema::dropIfExists('deal_stages');
     }
 };
