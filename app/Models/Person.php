@@ -19,6 +19,11 @@ class Person extends Model
         'notes',
     ];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope);
+    }
+
     // Relationships
     public function entity(): BelongsTo
     {

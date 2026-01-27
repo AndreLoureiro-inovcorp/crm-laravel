@@ -16,4 +16,9 @@ class DealStage extends Model
     protected $casts = [
         'order' => 'integer',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope);
+    }
 }

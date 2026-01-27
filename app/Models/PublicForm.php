@@ -21,6 +21,11 @@ class PublicForm extends Model
         'is_active' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope);
+    }
+
     // Relationships
     public function submissions(): HasMany
     {

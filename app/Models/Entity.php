@@ -18,6 +18,11 @@ class Entity extends Model
         'status',
     ];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope);
+    }
+
     // Relationships
     public function people(): HasMany
     {

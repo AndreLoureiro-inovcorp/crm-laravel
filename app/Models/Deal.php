@@ -28,6 +28,11 @@ class Deal extends Model
         'expected_close_date' => 'date',
     ];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope);
+    }
+
     // Relationships
     public function entity(): BelongsTo
     {

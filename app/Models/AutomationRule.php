@@ -19,4 +19,9 @@ class AutomationRule extends Model
         'trigger_value' => 'integer',
         'is_active' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope);
+    }
 }

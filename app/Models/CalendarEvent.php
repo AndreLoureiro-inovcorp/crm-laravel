@@ -25,6 +25,11 @@ class CalendarEvent extends Model
         'end_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope);
+    }
+
     // Relationships
     public function eventable(): MorphTo
     {
