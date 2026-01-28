@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\EntityController;
+use App\Http\Controllers\PersonController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -17,6 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
     Route::resource('entities', EntityController::class);
+    Route::resource('people', PersonController::class);
 });
 
 require __DIR__.'/settings.php';
