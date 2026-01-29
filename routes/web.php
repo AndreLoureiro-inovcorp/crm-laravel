@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\PersonController;
+use App\Http\Controllers\DealController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -19,6 +20,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('entities', EntityController::class);
     Route::resource('people', PersonController::class);
+   
+    Route::resource('deals', DealController::class);
+    Route::patch('deals/{deal}/stage', [DealController::class, 'updateStage'])
+        ->name('deals.updateStage');
 });
 
 require __DIR__.'/settings.php';
