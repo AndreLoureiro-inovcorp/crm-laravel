@@ -185,12 +185,12 @@ class DealController extends Controller
         $validated = $request->validate([
             'proposal' => 'required|file|mimes:pdf,doc,docx|max:10240',
         ]);
+
         if ($deal->proposal) {
             Storage::disk('public')->delete($deal->proposal->file_path);
             $deal->proposal->delete();
         }
 
-        // Store new proposal
         $path = $request->file('proposal')->store('proposals', 'public');
 
         $deal->proposal()->create([
@@ -242,5 +242,38 @@ class DealController extends Controller
         ]);
 
         return back()->with('success', 'Proposta enviada com sucesso.');
+    }
+
+    /**
+     * Add product to deal.
+     */
+    public function addProduct(Request $request, Deal $deal)
+    {
+        $this->authorize('update', $deal);
+
+        $validated = $request->validate([
+            'product_name' => 'required|string|max:255',
+            'quantity' => 'required|integer|min:1',
+            'unit_price' => 'required|numeric|min:0',
+        ]);
+
+        $validated['total_price'] = $validated['quantity'] * $validated['unit_price'];
+
+        $deal->products()->create($validated);
+
+        return back()->with('success', 'Produto adicionado com sucesso.');
+    }
+
+    /**
+     * Remove product from deal.
+     */
+    public function removeProduct(Deal $deal, $productId)
+    {
+        $this->authorize('update', $deal);
+
+        $product = $deal->products()->findOrFail($productId);
+        $product->delete();
+
+        return back()->with('success', 'Produto removido com sucesso.');
     }
 }

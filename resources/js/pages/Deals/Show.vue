@@ -97,6 +97,7 @@ const { deal } = defineProps<{
 
 const proposalFile = ref<File | null>(null)
 const showEmailModal = ref(false)
+const showProductModal = ref(false)
 
 const emailForm = useForm({
     email_body: `Exmo(a) Sr(a),
@@ -107,6 +108,12 @@ Ficamos ao dispor para qualquer esclarecimento adicional.
 
 Cumprimentos,
 ${deal.owner?.name ?? 'Equipa Comercial'}`,
+})
+
+const productForm = useForm({
+    product_name: '',
+    quantity: '',
+    unit_price: '',
 })
 
 /* -------------------------------------------------------------------------- */
@@ -121,7 +128,7 @@ function formatCurrency(value: number): string {
 }
 
 /* -------------------------------------------------------------------------- */
-/* ACTIONS */
+/* ACTIONS - PROPOSAL */
 /* -------------------------------------------------------------------------- */
 
 function handleFileChange(event: Event) {
@@ -157,6 +164,32 @@ function sendProposal() {
             showEmailModal.value = false
         },
     })
+}
+
+/* -------------------------------------------------------------------------- */
+/* ACTIONS - PRODUCTS */
+/* -------------------------------------------------------------------------- */
+
+function openProductModal() {
+    showProductModal.value = true
+}
+
+function addProduct() {
+    productForm.post(`/deals/${deal.id}/products`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showProductModal.value = false
+            productForm.reset()
+        },
+    })
+}
+
+function removeProduct(productId: number) {
+    if (confirm('Tem a certeza que deseja remover este produto?')) {
+        router.delete(`/deals/${deal.id}/products/${productId}`, {
+            preserveScroll: true,
+        })
+    }
 }
 </script>
 
@@ -310,8 +343,11 @@ function sendProposal() {
                         </Dialog>
 
                         <!-- Produtos -->
-                        <div class="mb-8">
-                            <h2 class="text-xl font-bold mb-4">Produtos</h2>
+                        <div class="mb-8 border-t pt-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold">Produtos</h2>
+                                <Button @click="openProductModal">Adicionar Produto</Button>
+                            </div>
 
                             <Table v-if="deal.products?.length">
                                 <TableHeader>
@@ -320,6 +356,7 @@ function sendProposal() {
                                         <TableHead>Quantidade</TableHead>
                                         <TableHead>Preço Unitário</TableHead>
                                         <TableHead>Total</TableHead>
+                                        <TableHead class="text-right">Ações</TableHead>
                                     </TableRow>
                                 </TableHeader>
 
@@ -331,6 +368,11 @@ function sendProposal() {
                                         <TableCell>{{ product.quantity }}</TableCell>
                                         <TableCell>{{ formatCurrency(product.unit_price) }}</TableCell>
                                         <TableCell>{{ formatCurrency(product.total_price) }}</TableCell>
+                                        <TableCell class="text-right">
+                                            <Button variant="destructive" size="sm" @click="removeProduct(product.id)">
+                                                Remover
+                                            </Button>
+                                        </TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
@@ -339,6 +381,56 @@ function sendProposal() {
                                 Nenhum produto associado.
                             </p>
                         </div>
+
+                        <!-- Product Modal -->
+                        <Dialog v-model:open="showProductModal">
+                            <DialogContent class="max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Adicionar Produto</DialogTitle>
+                                    <DialogDescription>
+                                        Preencha os dados do produto.
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                <div class="space-y-4 py-4">
+                                    <div>
+                                        <Label for="product_name">Nome do Produto *</Label>
+                                        <Input id="product_name" v-model="productForm.product_name" type="text"
+                                            class="mt-1" />
+                                        <p v-if="productForm.errors.product_name" class="text-red-600 text-sm mt-1">
+                                            {{ productForm.errors.product_name }}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <Label for="quantity">Quantidade *</Label>
+                                        <Input id="quantity" v-model="productForm.quantity" type="number" min="1"
+                                            class="mt-1" />
+                                        <p v-if="productForm.errors.quantity" class="text-red-600 text-sm mt-1">
+                                            {{ productForm.errors.quantity }}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <Label for="unit_price">Preço Unitário *</Label>
+                                        <Input id="unit_price" v-model="productForm.unit_price" type="number"
+                                            step="0.01" min="0" class="mt-1" />
+                                        <p v-if="productForm.errors.unit_price" class="text-red-600 text-sm mt-1">
+                                            {{ productForm.errors.unit_price }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <DialogFooter>
+                                    <Button variant="outline" @click="showProductModal = false">
+                                        Cancelar
+                                    </Button>
+                                    <Button @click="addProduct" :disabled="productForm.processing">
+                                        Adicionar
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
 
                         <!-- Atividades -->
                         <div>
