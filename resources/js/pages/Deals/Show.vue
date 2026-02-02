@@ -83,12 +83,24 @@ interface Deal {
     proposal?: DealProposal | null
 }
 
+interface TimelineItem {
+    id: number
+    type: 'activity' | 'email'
+    activity_type?: string
+    email_type?: string
+    description?: string
+    subject?: string
+    date: string
+    user?: string | null
+}
+
 /* -------------------------------------------------------------------------- */
 /* PROPS */
 /* -------------------------------------------------------------------------- */
 
-const { deal } = defineProps<{
+const { deal, timeline } = defineProps<{
     deal: Deal
+    timeline?: TimelineItem[]
 }>()
 
 /* -------------------------------------------------------------------------- */
@@ -432,38 +444,40 @@ function removeProduct(productId: number) {
                             </DialogContent>
                         </Dialog>
 
-                        <!-- Atividades -->
-                        <div>
-                            <h2 class="text-xl font-bold mb-4">Atividades</h2>
+                        <!-- Cronologia -->
+                        <div class="border-t pt-6">
+                            <h2 class="text-xl font-bold mb-4">Cronologia</h2>
 
-                            <Table v-if="deal.activities?.length">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Tipo</TableHead>
-                                        <TableHead>Descrição</TableHead>
-                                        <TableHead>Data</TableHead>
-                                        <TableHead>Utilizador</TableHead>
-                                    </TableRow>
-                                </TableHeader>
+                            <div v-if="timeline?.length" class="space-y-4">
+                                <div v-for="item in timeline" :key="`${item.type}-${item.id}`"
+                                    class="border-l-4 pl-4 py-3"
+                                    :class="item.type === 'email' ? 'border-blue-500' : 'border-gray-400'">
 
-                                <TableBody>
-                                    <TableRow v-for="activity in deal.activities" :key="activity.id">
-                                        <TableCell>
-                                            <Badge variant="outline">{{ activity.type }}</Badge>
-                                        </TableCell>
-                                        <TableCell class="font-medium">
-                                            {{ activity.description }}
-                                        </TableCell>
-                                        <TableCell>
-                                            {{ new Date(activity.occurred_at).toLocaleString('pt-PT') }}
-                                        </TableCell>
-                                        <TableCell>{{ activity.user?.name ?? '-' }}</TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <Badge :variant="item.type === 'email' ? 'default' : 'outline'">
+                                                    {{ item.type === 'email' ? item.email_type : item.activity_type }}
+                                                </Badge>
+                                                <span class="text-xs text-gray-500">
+                                                    {{ new Date(item.date).toLocaleString('pt-PT') }}
+                                                </span>
+                                            </div>
+
+                                            <p class="text-sm font-medium text-gray-900">
+                                                {{ item.type === 'email' ? item.subject : item.description }}
+                                            </p>
+
+                                            <p v-if="item.user" class="text-xs text-gray-500 mt-1">
+                                                Por: {{ item.user }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <p v-else class="text-gray-500 text-sm">
-                                Nenhuma atividade registada.
+                                Nenhuma atividade ou email registado.
                             </p>
                         </div>
 

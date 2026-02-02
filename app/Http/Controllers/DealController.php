@@ -99,8 +99,34 @@ class DealController extends Controller
             'calendarEvents',
         ]);
 
+        // Criar timeline unificada (atividades + emails ordenados por data)
+        $timeline = collect()
+            ->merge($deal->activities->map(function ($activity) {
+                return [
+                    'id' => $activity->id,
+                    'type' => 'activity',
+                    'activity_type' => $activity->type,
+                    'description' => $activity->description,
+                    'date' => $activity->occurred_at,
+                    'user' => $activity->user?->name,
+                ];
+            }))
+            ->merge($deal->emails->map(function ($email) {
+                return [
+                    'id' => $email->id,
+                    'type' => 'email',
+                    'email_type' => $email->type,
+                    'subject' => $email->subject,
+                    'date' => $email->sent_at,
+                    'user' => null,
+                ];
+            }))
+            ->sortByDesc('date')
+            ->values();
+
         return Inertia::render('Deals/Show', [
             'deal' => $deal,
+            'timeline' => $timeline,
         ]);
     }
 
