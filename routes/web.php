@@ -23,8 +23,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('people', PersonController::class);
 
     Route::resource('deals', DealController::class);
-    
+
     Route::patch('deals/{deal}/stage', [DealController::class, 'updateStage'])->name('deals.updateStage');
+
+    Route::post('deals/{deal}/proposal/upload', [DealController::class, 'uploadProposal'])->name('deals.uploadProposal');
+    Route::post('deals/{deal}/proposal/send', [DealController::class, 'sendProposal'])->name('deals.sendProposal');
 
     Route::resource('calendar', CalendarEventController::class);
 });

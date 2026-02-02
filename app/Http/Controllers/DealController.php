@@ -8,6 +8,8 @@ use App\Models\Entity;
 use App\Models\Person;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class DealController extends Controller
@@ -91,7 +93,7 @@ class DealController extends Controller
             'person',
             'owner',
             'products',
-            'activities',
+            'activities.user',
             'emails',
             'proposal',
             'calendarEvents',
@@ -171,5 +173,74 @@ class DealController extends Controller
         $deal->update(['stage' => $validated['stage']]);
 
         return back();
+    }
+
+    /**
+     * Upload proposal file to deal.
+     */
+    public function uploadProposal(Request $request, Deal $deal)
+    {
+        $this->authorize('update', $deal);
+
+        $validated = $request->validate([
+            'proposal' => 'required|file|mimes:pdf,doc,docx|max:10240',
+        ]);
+        if ($deal->proposal) {
+            Storage::disk('public')->delete($deal->proposal->file_path);
+            $deal->proposal->delete();
+        }
+
+        // Store new proposal
+        $path = $request->file('proposal')->store('proposals', 'public');
+
+        $deal->proposal()->create([
+            'file_path' => $path,
+        ]);
+
+        return back()->with('success', 'Proposta carregada com sucesso.');
+    }
+
+    /**
+     * Send proposal to client via email.
+     */
+    public function sendProposal(Request $request, Deal $deal)
+    {
+        $this->authorize('update', $deal);
+
+        $validated = $request->validate([
+            'email_body' => 'required|string',
+        ]);
+
+        if (! $deal->proposal) {
+            return back()->withErrors(['proposal' => 'Nenhuma proposta carregada.']);
+        }
+
+        $clientEmail = $deal->person?->email ?? $deal->entity?->email;
+
+        if (! $clientEmail) {
+            return back()->withErrors(['email' => 'Cliente não tem email configurado.']);
+        }
+
+        Mail::send([], [], function ($message) use ($deal, $clientEmail, $validated) {
+            $message->to($clientEmail)
+                ->subject("Proposta - {$deal->title}")
+                ->html($validated['email_body'])
+                ->attach(storage_path('app/public/'.$deal->proposal->file_path));
+        });
+
+        $deal->proposal->update([
+            'sent_at' => now(),
+            'sent_by' => auth()->id(),
+        ]);
+
+        $deal->activities()->create([
+            'tenant_id' => auth()->user()->tenant_id,
+            'user_id' => auth()->id(),
+            'type' => 'email',
+            'description' => 'Proposta enviada ao cliente',
+            'occurred_at' => now(),
+        ]);
+
+        return back()->with('success', 'Proposta enviada com sucesso.');
     }
 }

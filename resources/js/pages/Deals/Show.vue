@@ -1,8 +1,19 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, router, useForm } from '@inertiajs/vue3'
+import { ref } from 'vue'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
     Table,
     TableBody,
@@ -11,6 +22,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
+import { Textarea } from '@/components/ui/textarea'
 import AppLayout from '@/layouts/AppLayout.vue'
 
 /* -------------------------------------------------------------------------- */
@@ -25,6 +37,7 @@ interface Entity {
 interface Person {
     id: number
     name: string
+    email?: string | null
 }
 
 interface User {
@@ -48,24 +61,11 @@ interface DealActivity {
     user?: User
 }
 
-interface DealEmail {
-    id: number
-    type: string
-    subject: string
-    sent_at: string
-}
-
 interface DealProposal {
     id: number
     file_path: string
     sent_at?: string | null
-}
-
-interface CalendarEvent {
-    id: number
-    title: string
-    start_at: string
-    end_at: string
+    sent_by?: number | null
 }
 
 interface Deal {
@@ -75,14 +75,12 @@ interface Deal {
     stage: string
     probability: number
     expected_close_date?: string | null
-    entity?: Entity | null
+    entity?: (Entity & { email?: string | null }) | null
     person?: Person | null
     owner?: User | null
     products?: DealProduct[]
     activities?: DealActivity[]
-    emails?: DealEmail[]
     proposal?: DealProposal | null
-    calendar_events?: CalendarEvent[]
 }
 
 /* -------------------------------------------------------------------------- */
@@ -94,6 +92,24 @@ const { deal } = defineProps<{
 }>()
 
 /* -------------------------------------------------------------------------- */
+/* STATE */
+/* -------------------------------------------------------------------------- */
+
+const proposalFile = ref<File | null>(null)
+const showEmailModal = ref(false)
+
+const emailForm = useForm({
+    email_body: `Exmo(a) Sr(a),
+
+Segue em anexo a proposta solicitada para o negócio "${deal.title}".
+
+Ficamos ao dispor para qualquer esclarecimento adicional.
+
+Cumprimentos,
+${deal.owner?.name ?? 'Equipa Comercial'}`,
+})
+
+/* -------------------------------------------------------------------------- */
 /* HELPERS */
 /* -------------------------------------------------------------------------- */
 
@@ -102,6 +118,45 @@ function formatCurrency(value: number): string {
         style: 'currency',
         currency: 'EUR',
     }).format(value)
+}
+
+/* -------------------------------------------------------------------------- */
+/* ACTIONS */
+/* -------------------------------------------------------------------------- */
+
+function handleFileChange(event: Event) {
+    const target = event.target as HTMLInputElement
+    if (target.files && target.files.length > 0) {
+        proposalFile.value = target.files[0]
+    }
+}
+
+function uploadProposal() {
+    if (!proposalFile.value) return
+
+    const formData = new FormData()
+    formData.append('proposal', proposalFile.value)
+
+    router.post(`/deals/${deal.id}/proposal/upload`, formData, {
+        preserveScroll: true,
+        onSuccess: () => {
+            proposalFile.value = null
+        },
+    })
+}
+
+function openEmailModal() {
+    if (!deal.proposal) return
+    showEmailModal.value = true
+}
+
+function sendProposal() {
+    emailForm.post(`/deals/${deal.id}/proposal/send`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showEmailModal.value = false
+        },
+    })
 }
 </script>
 
@@ -171,13 +226,88 @@ function formatCurrency(value: number): string {
                             <div>
                                 <h3 class="text-sm font-medium text-gray-500">Data Prevista de Fecho</h3>
                                 <p class="mt-1 text-sm text-gray-900">
-                                    {{ deal.expected_close_date
-                                        ? new Date(deal.expected_close_date).toLocaleDateString('pt-PT')
-                                        : '-'
+                                    {{
+                                        deal.expected_close_date
+                                            ? new Date(deal.expected_close_date).toLocaleDateString('pt-PT')
+                                            : '-'
                                     }}
                                 </p>
                             </div>
                         </div>
+
+                        <!-- Proposta -->
+                        <div class="mb-8 border-t pt-6">
+                            <h2 class="text-xl font-bold mb-4">Proposta</h2>
+
+                            <div v-if="deal.proposal" class="bg-gray-50 p-6 rounded-lg">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium">
+                                            {{ deal.proposal.file_path.split('/').pop() }}
+                                        </p>
+                                    </div>
+
+                                    <Button @click="openEmailModal">
+                                        Enviar ao Cliente
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div v-else class="bg-gray-50 p-6 rounded-lg">
+                                <div class="space-y-4">
+                                    <p class="text-sm text-gray-600">Nenhuma proposta carregada.</p>
+
+                                    <div>
+                                        <Label for="proposal-file">Carregar Proposta (PDF, DOC, DOCX - Max 10MB)</Label>
+                                        <Input id="proposal-file" type="file" accept=".pdf,.doc,.docx"
+                                            @change="handleFileChange" class="mt-2" />
+                                    </div>
+
+                                    <Button @click="uploadProposal" :disabled="!proposalFile">
+                                        Carregar Proposta
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Email Modal -->
+                        <Dialog v-model:open="showEmailModal">
+                            <DialogContent class="max-w-2xl">
+                                <DialogHeader>
+                                    <DialogTitle>Enviar Proposta ao Cliente</DialogTitle>
+                                    <DialogDescription>
+                                        Personalize o email antes de enviar a proposta.
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                <div class="space-y-4 py-4">
+                                    <div>
+                                        <Label>Destinatário</Label>
+                                        <p class="text-sm text-gray-600 mt-1">
+                                            {{ deal.person?.email ?? deal.entity?.email ?? 'Email não configurado' }}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <Label for="email_body">Mensagem</Label>
+                                        <Textarea id="email_body" v-model="emailForm.email_body" :rows="10"
+                                            class="mt-2 font-mono text-sm" />
+                                        <p v-if="emailForm.errors.email_body" class="text-red-600 text-sm mt-1">
+                                            {{ emailForm.errors.email_body }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <DialogFooter>
+                                    <Button variant="outline" @click="showEmailModal = false">
+                                        Cancelar
+                                    </Button>
+                                    <Button @click="sendProposal" :disabled="emailForm.processing">
+                                        Enviar Proposta
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
 
                         <!-- Produtos -->
                         <div class="mb-8">
@@ -211,7 +341,7 @@ function formatCurrency(value: number): string {
                         </div>
 
                         <!-- Atividades -->
-                        <div class="mb-8">
+                        <div>
                             <h2 class="text-xl font-bold mb-4">Atividades</h2>
 
                             <Table v-if="deal.activities?.length">
@@ -242,90 +372,6 @@ function formatCurrency(value: number): string {
 
                             <p v-else class="text-gray-500 text-sm">
                                 Nenhuma atividade registada.
-                            </p>
-                        </div>
-
-                        <!-- Emails -->
-                        <div class="mb-8">
-                            <h2 class="text-xl font-bold mb-4">Emails Enviados</h2>
-
-                            <Table v-if="deal.emails?.length">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Tipo</TableHead>
-                                        <TableHead>Assunto</TableHead>
-                                        <TableHead>Enviado em</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-
-                                <TableBody>
-                                    <TableRow v-for="email in deal.emails" :key="email.id">
-                                        <TableCell>
-                                            <Badge>{{ email.type }}</Badge>
-                                        </TableCell>
-                                        <TableCell class="font-medium">
-                                            {{ email.subject }}
-                                        </TableCell>
-                                        <TableCell>
-                                            {{ new Date(email.sent_at).toLocaleString('pt-PT') }}
-                                        </TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
-
-                            <p v-else class="text-gray-500 text-sm">
-                                Nenhum email enviado.
-                            </p>
-                        </div>
-
-                        <!-- Proposta -->
-                        <div class="mb-8">
-                            <h2 class="text-xl font-bold mb-4">Proposta</h2>
-
-                            <div v-if="deal.proposal" class="bg-gray-50 p-4 rounded-lg">
-                                <p class="text-sm font-medium">
-                                    Ficheiro: {{ deal.proposal.file_path }}
-                                </p>
-                                <p v-if="deal.proposal.sent_at" class="text-sm text-gray-600 mt-1">
-                                    Enviado em: {{ new Date(deal.proposal.sent_at).toLocaleString('pt-PT') }}
-                                </p>
-                            </div>
-
-                            <p v-else class="text-gray-500 text-sm">
-                                Nenhuma proposta carregada.
-                            </p>
-                        </div>
-
-                        <!-- Eventos -->
-                        <div>
-                            <h2 class="text-xl font-bold mb-4">Eventos</h2>
-
-                            <Table v-if="deal.calendar_events?.length">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Título</TableHead>
-                                        <TableHead>Início</TableHead>
-                                        <TableHead>Fim</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-
-                                <TableBody>
-                                    <TableRow v-for="event in deal.calendar_events" :key="event.id">
-                                        <TableCell class="font-medium">
-                                            {{ event.title }}
-                                        </TableCell>
-                                        <TableCell>
-                                            {{ new Date(event.start_at).toLocaleString('pt-PT') }}
-                                        </TableCell>
-                                        <TableCell>
-                                            {{ new Date(event.end_at).toLocaleString('pt-PT') }}
-                                        </TableCell>
-                                    </TableRow>
-                                </TableBody>
-                            </Table>
-
-                            <p v-else class="text-gray-500 text-sm">
-                                Nenhum evento associado.
                             </p>
                         </div>
 
