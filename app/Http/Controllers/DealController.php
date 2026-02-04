@@ -302,4 +302,25 @@ class DealController extends Controller
 
         return back()->with('success', 'Produto removido com sucesso.');
     }
+
+    /**
+     * Store a new activity for the deal.
+     */
+    public function storeActivity(Request $request, Deal $deal)
+    {
+        $this->authorize('update', $deal);
+
+        $validated = $request->validate([
+            'type' => 'required|in:call,task,meeting,note',
+            'description' => 'required|string|max:500',
+            'occurred_at' => 'required|date',
+        ]);
+
+        $validated['tenant_id'] = auth()->user()->tenant_id;
+        $validated['user_id'] = auth()->id();
+
+        $deal->activities()->create($validated);
+
+        return back()->with('success', 'Atividade criada com sucesso.');
+    }
 }

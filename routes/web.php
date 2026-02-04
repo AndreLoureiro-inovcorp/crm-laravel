@@ -31,6 +31,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('deals/{deal}/products', [DealController::class, 'addProduct'])->name('deals.addProduct');
     Route::delete('deals/{deal}/products/{product}', [DealController::class, 'removeProduct'])->name('deals.removeProduct');
 
+    Route::post('deals/{deal}/activities', [DealController::class, 'storeActivity'])->name('deals.storeActivity');
+
     Route::resource('deals', DealController::class);
 
     Route::resource('calendar', CalendarEventController::class);

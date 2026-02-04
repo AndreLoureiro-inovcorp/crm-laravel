@@ -110,6 +110,7 @@ const { deal, timeline } = defineProps<{
 const proposalFile = ref<File | null>(null)
 const showEmailModal = ref(false)
 const showProductModal = ref(false)
+const showActivityModal = ref(false)
 
 const emailForm = useForm({
     email_body: `Exmo(a) Sr(a),
@@ -126,6 +127,12 @@ const productForm = useForm({
     product_name: '',
     quantity: '',
     unit_price: '',
+})
+
+const activityForm = useForm({
+    type: 'call',
+    description: '',
+    occurred_at: new Date().toISOString().slice(0, 16),
 })
 
 /* -------------------------------------------------------------------------- */
@@ -202,6 +209,26 @@ function removeProduct(productId: number) {
             preserveScroll: true,
         })
     }
+}
+
+/* -------------------------------------------------------------------------- */
+/* ACTIONS - ACTIVITIES */
+/* -------------------------------------------------------------------------- */
+
+function openActivityModal() {
+    showActivityModal.value = true
+}
+
+function createActivity() {
+    activityForm.post(`/deals/${deal.id}/activities`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showActivityModal.value = false
+            activityForm.reset()
+            activityForm.type = 'call'
+            activityForm.occurred_at = new Date().toISOString().slice(0, 16)
+        },
+    })
 }
 </script>
 
@@ -446,7 +473,10 @@ function removeProduct(productId: number) {
 
                         <!-- Cronologia -->
                         <div class="border-t pt-6">
-                            <h2 class="text-xl font-bold mb-4">Cronologia</h2>
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold">Cronologia</h2>
+                                <Button @click="openActivityModal">+ Nova Atividade</Button>
+                            </div>
 
                             <div v-if="timeline?.length" class="space-y-4">
                                 <div v-for="item in timeline" :key="`${item.type}-${item.id}`"
@@ -480,6 +510,61 @@ function removeProduct(productId: number) {
                                 Nenhuma atividade ou email registado.
                             </p>
                         </div>
+
+                        <!-- Activity Modal -->
+                        <Dialog v-model:open="showActivityModal">
+                            <DialogContent class="max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Nova Atividade</DialogTitle>
+                                    <DialogDescription>
+                                        Registar uma nova atividade neste negócio.
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                <div class="space-y-4 py-4">
+                                    <div>
+                                        <Label for="activity_type">Tipo *</Label>
+                                        <select id="activity_type" v-model="activityForm.type"
+                                            class="mt-1 w-full border rounded px-3 py-2">
+                                            <option value="call">Chamada</option>
+                                            <option value="task">Tarefa</option>
+                                            <option value="meeting">Reunião</option>
+                                            <option value="note">Nota</option>
+                                        </select>
+                                        <p v-if="activityForm.errors.type" class="text-red-600 text-sm mt-1">
+                                            {{ activityForm.errors.type }}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <Label for="activity_description">Descrição *</Label>
+                                        <Textarea id="activity_description" v-model="activityForm.description" :rows="4"
+                                            class="mt-1" />
+                                        <p v-if="activityForm.errors.description" class="text-red-600 text-sm mt-1">
+                                            {{ activityForm.errors.description }}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <Label for="activity_occurred_at">Data/Hora *</Label>
+                                        <Input id="activity_occurred_at" v-model="activityForm.occurred_at"
+                                            type="datetime-local" class="mt-1" />
+                                        <p v-if="activityForm.errors.occurred_at" class="text-red-600 text-sm mt-1">
+                                            {{ activityForm.errors.occurred_at }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <DialogFooter>
+                                    <Button variant="outline" @click="showActivityModal = false">
+                                        Cancelar
+                                    </Button>
+                                    <Button @click="createActivity" :disabled="activityForm.processing">
+                                        Criar Atividade
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
 
                     </div>
                 </div>
