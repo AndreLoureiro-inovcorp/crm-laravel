@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AutomationRuleController;
 use App\Http\Controllers\CalendarEventController;
 use App\Http\Controllers\DealController;
 use App\Http\Controllers\EntityController;
@@ -40,6 +41,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('products/stats', [ProductStatsController::class, 'index'])->name('products.stats');
     Route::get('products/stats/export', [ProductStatsController::class, 'export'])->name('products.stats.export');
     Route::get('products/stats/{productName}', [ProductStatsController::class, 'show'])->name('products.stats.show');
+
+    Route::get('automations', [AutomationRuleController::class, 'index'])->name('automations.index');
+    Route::post('automations', [AutomationRuleController::class, 'store'])->name('automations.store');
+    Route::patch('automations/{automationRule}/toggle', [AutomationRuleController::class, 'toggle'])->name('automations.toggle');
+    Route::delete('automations/{automationRule}', [AutomationRuleController::class, 'destroy'])->name('automations.destroy');
 });
 
 require __DIR__.'/settings.php';
