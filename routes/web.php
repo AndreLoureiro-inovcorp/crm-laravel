@@ -6,6 +6,7 @@ use App\Http\Controllers\DealController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\PersonController;
 use App\Http\Controllers\ProductStatsController;
+use App\Http\Controllers\PublicFormController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -46,6 +47,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('automations', [AutomationRuleController::class, 'store'])->name('automations.store');
     Route::patch('automations/{automationRule}/toggle', [AutomationRuleController::class, 'toggle'])->name('automations.toggle');
     Route::delete('automations/{automationRule}', [AutomationRuleController::class, 'destroy'])->name('automations.destroy');
+
+    Route::get('forms', [PublicFormController::class, 'index'])->name('forms.index');
+    Route::get('forms/create', [PublicFormController::class, 'create'])->name('forms.create');
+    Route::post('forms', [PublicFormController::class, 'store'])->name('forms.store');
+    Route::get('forms/{form}', [PublicFormController::class, 'show'])->name('forms.show');
+    Route::patch('forms/{form}/toggle', [PublicFormController::class, 'toggle'])->name('forms.toggle');
+    Route::delete('forms/{form}', [PublicFormController::class, 'destroy'])->name('forms.destroy');
 });
+
+Route::get('form/{id}', [PublicFormController::class, 'showPublic'])->name('forms.public');
+Route::post('form/{id}/submit', [PublicFormController::class, 'submit'])->name('forms.submit');
 
 require __DIR__.'/settings.php';
