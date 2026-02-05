@@ -25,12 +25,6 @@ interface PublicForm {
     confirmation_message: string
 }
 
-interface PageProps {
-    flash?: {
-        success?: string
-    }
-}
-
 /* -------------------------------------------------------------------------- */
 /* PROPS */
 /* -------------------------------------------------------------------------- */
