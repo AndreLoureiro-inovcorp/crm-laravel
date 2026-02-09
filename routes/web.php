@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AutomationRuleController;
 use App\Http\Controllers\CalendarEventController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DealController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\PersonController;
@@ -54,6 +55,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('forms/{form}', [PublicFormController::class, 'show'])->name('forms.show');
     Route::patch('forms/{form}/toggle', [PublicFormController::class, 'toggle'])->name('forms.toggle');
     Route::delete('forms/{form}', [PublicFormController::class, 'destroy'])->name('forms.destroy');
+
+    Route::get('chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::post('chat/send', [ChatController::class, 'send'])->name('chat.send');
+    Route::delete('chat/clear', [ChatController::class, 'clear'])->name('chat.clear');
 });
 
 Route::get('form/{id}', [PublicFormController::class, 'showPublic'])->name('forms.public');
