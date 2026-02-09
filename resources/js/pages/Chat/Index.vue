@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3'
-import { ref, nextTick, computed } from 'vue'
 import axios from 'axios'
+import { ref, nextTick, computed } from 'vue'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
